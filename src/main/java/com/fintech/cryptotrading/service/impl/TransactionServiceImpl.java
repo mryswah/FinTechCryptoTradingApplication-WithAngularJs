@@ -9,6 +9,8 @@ import com.fintech.cryptotrading.model.requests.TransactionRequest;
 import com.fintech.cryptotrading.repository.*;
 import com.fintech.cryptotrading.service.TransactionService;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,7 @@ import static com.fintech.cryptotrading.mapper.TransactionsMapper.mapToTransacti
 
 @Service
 public class TransactionServiceImpl implements TransactionService {
+    private static final Logger log = LoggerFactory.getLogger(TransactionServiceImpl.class);
 
     private final TransactionsRepository transactionsRepository;
     private final UserRepository userRepository;
@@ -58,7 +61,7 @@ public class TransactionServiceImpl implements TransactionService {
         transactionsRepository.saveAndFlush(transactions);
 
         double estimatedTime = (double) (System.nanoTime() - startTime) / CommonConstant.BILLION;
-        System.out.println("[TransactionServiceImpl] Time taken (in seconds) for /trade/openTransaction endpoint : " + estimatedTime);
+        log.info("Time taken (in seconds) for /trade/openTransaction endpoint : {}", estimatedTime);
         return mapToTransactionsDto(transactions);
     }
 
@@ -99,18 +102,10 @@ public class TransactionServiceImpl implements TransactionService {
             proceedToWalletActivities(transactions);
             transactionsRepository.saveAndFlush(transactions);
             double estimatedTime = (double) (System.nanoTime() - startTime) / CommonConstant.BILLION;
-            System.out.println("[TransactionServiceImpl] Time taken (in seconds) for /trade/closeTransaction endpoint : " + estimatedTime);
+            log.info("Time taken (in seconds) for /trade/closeTransaction endpoint : {}", estimatedTime);
             return mapToTransactionsDto(transactions);
         }
-        StringBuilder str = new StringBuilder();
-        str.append("The following transaction reference number ");
-        str.append(closeTransactionRequest.getTransactionReferenceNumber());
-        str.append(", done by username ");
-        str.append(closeTransactionRequest.getUsername());
-        str.append(" ,for symbol ");
-        str.append(closeTransactionRequest.getCoinName());
-        str.append(" has either been closed, or does not exist in our system");
-        throw new TransactionsException(str.toString());
+        throw new TransactionsException(constructCloseTransactionExceptionMessage(closeTransactionRequest));
     }
 
     private void proceedToWalletActivities(Transactions transactions) throws TransactionsException {
@@ -161,6 +156,19 @@ public class TransactionServiceImpl implements TransactionService {
             case CommonConstant.CLOSED -> userCryptoWallet.getBalance() - transactions.getUnits();
             default -> 0;
         };
+    }
+
+    // Construct the TransactionException message when trying to close a Transaction that is either CLOSED or does not exist
+    private String constructCloseTransactionExceptionMessage(CloseTransactionRequest closeTransactionRequest) {
+        StringBuilder str = new StringBuilder();
+        str.append("The following transaction reference number ");
+        str.append(closeTransactionRequest.getTransactionReferenceNumber());
+        str.append(", done by username ");
+        str.append(closeTransactionRequest.getUsername());
+        str.append(" ,for symbol ");
+        str.append(closeTransactionRequest.getCoinName());
+        str.append(" has either been closed, or does not exist in our system");
+        return str.toString();
     }
 
 }
