@@ -1,9 +1,9 @@
 package com.fintech.cryptotrading.controller;
 
 import com.fintech.cryptotrading.dto.TransactionsDto;
-import com.fintech.cryptotrading.model.exceptions.TransactionsException;
-import com.fintech.cryptotrading.model.requests.CloseTransactionRequest;
-import com.fintech.cryptotrading.model.requests.TransactionRequest;
+import com.fintech.cryptotrading.exception.TransactionsException;
+import com.fintech.cryptotrading.request.closetransaction.CloseTransactionRequest;
+import com.fintech.cryptotrading.request.opentransaction.OpenTransactionRequest;
 import com.fintech.cryptotrading.service.TransactionService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,8 +25,8 @@ public class TransactionController {
     }
 
     @PostMapping("/openTransaction")
-    public ResponseEntity<TransactionsDto> buy(@Valid @RequestBody TransactionRequest transactionRequest) throws TransactionsException {
-        return new ResponseEntity<>(transactionService.trade(transactionRequest), HttpStatus.OK);
+    public ResponseEntity<TransactionsDto> buy(@Valid @RequestBody OpenTransactionRequest openTransactionRequest) throws TransactionsException {
+        return new ResponseEntity<>(transactionService.trade(openTransactionRequest), HttpStatus.OK);
     }
 
     @PostMapping("/closeTransaction")

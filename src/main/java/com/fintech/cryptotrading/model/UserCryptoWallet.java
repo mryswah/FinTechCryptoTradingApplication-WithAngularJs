@@ -9,7 +9,10 @@ import lombok.*;
 @Builder
 @Entity
 @ToString(exclude = "user")
-@Table(name = "user_crypto_wallet")
+@Table(name = "user_crypto_wallet",
+        indexes = {
+                @Index(name = "idx_user_id_symbol", columnList = "user_id, symbol")
+        })
 public class UserCryptoWallet {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

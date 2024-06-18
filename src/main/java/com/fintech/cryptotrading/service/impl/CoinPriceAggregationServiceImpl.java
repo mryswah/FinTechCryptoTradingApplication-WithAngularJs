@@ -3,11 +3,11 @@ package com.fintech.cryptotrading.service.impl;
 import com.fintech.cryptotrading.constant.CommonConstant;
 import com.fintech.cryptotrading.model.CoinPrice;
 import com.fintech.cryptotrading.model.Transactions;
-import com.fintech.cryptotrading.model.binance.BinanceResponse;
-import com.fintech.cryptotrading.model.huobi.HuobiData;
-import com.fintech.cryptotrading.model.huobi.HuobiResponse;
 import com.fintech.cryptotrading.repository.CoinPriceRepository;
 import com.fintech.cryptotrading.repository.TransactionsRepository;
+import com.fintech.cryptotrading.response.binance.BinanceResponse;
+import com.fintech.cryptotrading.response.huobi.HuobiData;
+import com.fintech.cryptotrading.response.huobi.HuobiResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,10 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class CoinPriceAggregationServiceImpl {
@@ -37,7 +36,7 @@ public class CoinPriceAggregationServiceImpl {
         this.transactionsRepository = transactionsRepository;
     }
 
-    @Scheduled(fixedDelay = 20000)
+    @Scheduled(fixedDelay = 10000)
     public void retrieveAndStoreCoinPrices() {
         long startTime = System.nanoTime();
         // Retrieve prices from Binance
@@ -54,43 +53,52 @@ public class CoinPriceAggregationServiceImpl {
 
         // Assuming both APIs return a successful response
         if (binancePrices != null && houbiPrices != null) {
+            Map<String, HuobiData> houbiPricesMap = new HashMap<>();
+            for (HuobiData hp : houbiPrices) {
+                houbiPricesMap.put(hp.getSymbol().toUpperCase(), hp);
+            }
+
             // To update the Ask/Bid Price in coin_price table
             for (BinanceResponse bp : binancePrices) {
-                for (HuobiData hp : houbiPrices) {
-                    if (bp.getSymbol().equalsIgnoreCase(hp.getSymbol())) {
-                        CoinPrice coinPrice = coinPriceRepository.findByName(bp.getSymbol());
-                        if (coinPrice == null) {
-                            coinPrice = new CoinPrice();
-                            coinPrice.setSymbol(bp.getSymbol());
-                        }
-                        float bid = Math.min(bp.getBidPrice(), hp.getBid());
-                        float ask = Math.max(bp.getAskPrice(), hp.getAsk());
-                        coinPrice.setBidPrice(bid);
-                        coinPrice.setAskPrice(ask);
-                        coinPriceRepository.saveAndFlush(coinPrice);
+                String symbol = bp.getSymbol().toUpperCase();
+                if (houbiPricesMap.containsKey(symbol)) {
+                    HuobiData hp = houbiPricesMap.get(symbol);
+                    CoinPrice coinPrice = coinPriceRepository.findByName(symbol);
+                    if (coinPrice == null) {
+                        coinPrice = new CoinPrice();
+                        coinPrice.setSymbol(symbol);
                     }
+                    float bid = Math.min(bp.getBidPrice(), hp.getBid());
+                    float ask = Math.max(bp.getAskPrice(), hp.getAsk());
+                    coinPrice.setBidPrice(bid);
+                    coinPrice.setAskPrice(ask);
+                    coinPriceRepository.saveAndFlush(coinPrice);
                 }
             }
         }
 
         // To update the Profit/Loss & Current Price in transaction table, for transactions which are OPEN
-        List<Transactions> transactions = transactionsRepository.findAllOpen(CommonConstant.OPEN);
+      List<Transactions> transactions = transactionsRepository.findAllOpen(CommonConstant.OPEN);
         if (!transactions.isEmpty()) {
-            List<CoinPrice> coinPrice = coinPriceRepository.findAll();
-            for (CoinPrice cp : coinPrice) {
-                for (Transactions t : transactions) {
-                    if (t.getCoinName().equals(cp.getSymbol())) {
-                        if (t.getOrderType().equalsIgnoreCase(CommonConstant.BUY)) {
-                            t.setCurrentPrice(cp.getBidPrice());
-                        } else {
-                            t.setCurrentPrice(cp.getAskPrice());
+            Map<String, CoinPrice> coinPriceMap = coinPriceRepository.findAll().stream()
+                    .collect(Collectors.toMap(CoinPrice::getSymbol, Function.identity()));
+            List<Transactions> updatedTransactions = transactions.stream().map(
+                    t -> {
+                        CoinPrice cp = coinPriceMap.get(t.getCoinName());
+                        if (cp != null) {
+                            if (t.getOrderType().equalsIgnoreCase(CommonConstant.BUY)) {
+                                t.setCurrentPrice(cp.getBidPrice());
+                            } else {
+                                t.setCurrentPrice(cp.getAskPrice());
+                            }
+                            t.setProfitLoss(t.getCurrentPrice() - t.getEntryPrice());
                         }
-                        t.setProfitLoss(t.getCurrentPrice() - t.getEntryPrice());
-                        transactionsRepository.save(t);
-                    }
-                }
-            }
+                        return t;
+                    }).collect(Collectors.toList());
+
+            transactionsRepository.saveAll(updatedTransactions);
         }
+
         double estimatedTime = (double) (System.nanoTime() - startTime) / CommonConstant.BILLION;
         log.info("Time taken (in seconds) for Scheduler : {}", estimatedTime);
     }

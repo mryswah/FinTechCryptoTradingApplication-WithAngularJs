@@ -25,4 +25,6 @@ public class CommonConstant {
         ;
         private final String symbol;
     }
+
+    public static final String DOES_NOT_EXIST_EXCEPTION = "The following username does not exist in our system : ";
 }

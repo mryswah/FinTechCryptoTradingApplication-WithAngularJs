@@ -1,6 +1,6 @@
-package com.fintech.cryptotrading.model.requests;
+package com.fintech.cryptotrading.request.closetransaction;
 
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,12 +11,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CloseTransactionRequest {
+public class CloseTransactionRequestBody {
+    @NotNull(message = "Invalid Transaction Reference Number")
     @Positive(message = "Invalid Transaction Reference Number")
     private Long transactionReferenceNumber;
-    @NotBlank(message = "Username cannot be blank")
-    private String username;
-    @NotBlank(message = "Coin Name cannot be blank")
-    private String coinName;
-
 }

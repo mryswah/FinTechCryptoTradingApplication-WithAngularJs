@@ -2,20 +2,18 @@ package com.fintech.cryptotrading.service.impl;
 
 import com.fintech.cryptotrading.constant.CommonConstant;
 import com.fintech.cryptotrading.dto.TransactionsDto;
+import com.fintech.cryptotrading.exception.TransactionsException;
 import com.fintech.cryptotrading.model.*;
-import com.fintech.cryptotrading.model.exceptions.TransactionsException;
-import com.fintech.cryptotrading.model.requests.CloseTransactionRequest;
-import com.fintech.cryptotrading.model.requests.TransactionRequest;
 import com.fintech.cryptotrading.repository.*;
+import com.fintech.cryptotrading.request.closetransaction.CloseTransactionRequest;
+import com.fintech.cryptotrading.request.opentransaction.OpenTransactionRequest;
 import com.fintech.cryptotrading.service.TransactionService;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 
 import static com.fintech.cryptotrading.mapper.TransactionsMapper.mapToTransactionsDto;
@@ -40,23 +38,22 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Transactional
-    public TransactionsDto trade(TransactionRequest transactionRequest) throws TransactionsException {
+    public TransactionsDto trade(OpenTransactionRequest openTransactionRequest) throws TransactionsException {
         long startTime = System.nanoTime();
-        Optional<User> user = userRepository.findByUsername(transactionRequest.getUsername());
+        String orderType = openTransactionRequest.getOpenTransactionRequestBody().getOrderType().toUpperCase();
+        if(!isBuyOrSell(orderType)){
+            throw new TransactionsException("Order Type can only be BUY or SELL");
+        }
+        Optional<User> user = userRepository.findByUsername(openTransactionRequest.getCustomerInformation().getUsername());
         if (user.isEmpty()) {
-            throw new TransactionsException("The following username does not exist in our system : " + transactionRequest.getUsername());
+            throw new TransactionsException(CommonConstant.DOES_NOT_EXIST_EXCEPTION + openTransactionRequest.getCustomerInformation().getUsername());
         }
-        List<CoinPrice> coinPrice = coinPriceRepository.findAll();
+        CoinPrice coinPrice = coinPriceRepository.findByName(openTransactionRequest.getTransactionInformation().getCoinName().toUpperCase());
+        if (coinPrice == null) {
+            throw new TransactionsException("The following Coin does not exist in our system : " + openTransactionRequest.getTransactionInformation().getCoinName());
+        }
 
-        // Check if the app supports the coin specified in the request.
-        CoinPrice selectedCoin = coinPrice.stream()
-                .filter(coin -> coin.getSymbol().equals(transactionRequest.getCoinName().toUpperCase()))
-                .findFirst()
-                .orElse(null);
-        if (selectedCoin == null) {
-            throw new TransactionsException("The following Coin does not exist in our system : " + transactionRequest.getCoinName());
-        }
-        Transactions transactions = setTransactionDetails(transactionRequest, user.get(), selectedCoin);
+        Transactions transactions = setTransactionDetails(openTransactionRequest, user.get(), coinPrice, orderType);
         proceedToWalletActivities(transactions);
         transactionsRepository.saveAndFlush(transactions);
 
@@ -66,20 +63,20 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     // Set the Transaction details
-    private static @NotNull Transactions setTransactionDetails(TransactionRequest transactionRequest, User user, CoinPrice selectedCoin) {
+    private static Transactions setTransactionDetails(OpenTransactionRequest openTransactionRequest, User user, CoinPrice coinPrice, String orderType) {
         Transactions transactions = new Transactions();
         transactions.setUser(user);
-        transactions.setCoinName(transactionRequest.getCoinName().toUpperCase());
-        transactions.setOrderType(transactionRequest.getOrderType().toUpperCase());
-        transactions.setUnits(transactionRequest.getUnits());
-        switch (transactionRequest.getOrderType().toUpperCase()) {
+        transactions.setCoinName(openTransactionRequest.getTransactionInformation().getCoinName().toUpperCase());
+        transactions.setOrderType(orderType);
+        transactions.setUnits(openTransactionRequest.getOpenTransactionRequestBody().getUnits());
+        switch (orderType) {
             case CommonConstant.BUY:
-                transactions.setEntryPrice(selectedCoin.getAskPrice());
-                transactions.setCurrentPrice(selectedCoin.getBidPrice());
+                transactions.setEntryPrice(coinPrice.getAskPrice());
+                transactions.setCurrentPrice(coinPrice.getBidPrice());
                 transactions.setAmountPaidFor(transactions.getEntryPrice() * transactions.getUnits());
             case CommonConstant.SELL:
-                transactions.setEntryPrice(selectedCoin.getBidPrice());
-                transactions.setCurrentPrice(selectedCoin.getAskPrice());
+                transactions.setEntryPrice(coinPrice.getBidPrice());
+                transactions.setCurrentPrice(coinPrice.getAskPrice());
                 transactions.setAmountPaidFor(transactions.getEntryPrice() * transactions.getUnits());
         }
         transactions.setProfitLoss(transactions.getCurrentPrice() - transactions.getEntryPrice());
@@ -90,11 +87,11 @@ public class TransactionServiceImpl implements TransactionService {
     @Transactional
     public TransactionsDto close(CloseTransactionRequest closeTransactionRequest) throws TransactionsException {
         long startTime = System.nanoTime();
-        Optional<User> user = userRepository.findByUsername(closeTransactionRequest.getUsername());
+        Optional<User> user = userRepository.findByUsername(closeTransactionRequest.getCustomerInformation().getUsername());
         if (user.isEmpty()) {
-            throw new TransactionsException("The following username does not exist in our system : " + closeTransactionRequest.getUsername());
+            throw new TransactionsException(CommonConstant.DOES_NOT_EXIST_EXCEPTION + closeTransactionRequest.getCustomerInformation().getUsername());
         }
-        Transactions transactions = transactionsRepository.findByQueries(closeTransactionRequest.getTransactionReferenceNumber(), user.get().getId(), closeTransactionRequest.getCoinName());
+        Transactions transactions = transactionsRepository.findByQueries(closeTransactionRequest.getCloseTransactionRequestBody().getTransactionReferenceNumber(), user.get().getId(), closeTransactionRequest.getTransactionInformation().getCoinName());
 
         if (transactions != null && transactions.getStatus().equals((CommonConstant.OPEN))) {
             transactions.setStatus(CommonConstant.CLOSED);
@@ -162,13 +159,18 @@ public class TransactionServiceImpl implements TransactionService {
     private String constructCloseTransactionExceptionMessage(CloseTransactionRequest closeTransactionRequest) {
         StringBuilder str = new StringBuilder();
         str.append("The following transaction reference number ");
-        str.append(closeTransactionRequest.getTransactionReferenceNumber());
+        str.append(closeTransactionRequest.getCloseTransactionRequestBody().getTransactionReferenceNumber());
         str.append(", done by username ");
-        str.append(closeTransactionRequest.getUsername());
+        str.append(closeTransactionRequest.getCustomerInformation().getUsername());
         str.append(" ,for symbol ");
-        str.append(closeTransactionRequest.getCoinName());
+        str.append(closeTransactionRequest.getTransactionInformation().getCoinName());
         str.append(" has either been closed, or does not exist in our system");
         return str.toString();
+    }
+
+    private boolean isBuyOrSell(String orderType){
+        return orderType.equalsIgnoreCase(CommonConstant.BUY) ||
+                orderType.equalsIgnoreCase(CommonConstant.SELL);
     }
 
 }
