@@ -1,4 +1,4 @@
-package com.fintech.cryptotrading.model.exceptions;
+package com.fintech.cryptotrading.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;

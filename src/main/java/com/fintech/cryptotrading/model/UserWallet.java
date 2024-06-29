@@ -9,7 +9,10 @@ import lombok.*;
 @Builder
 @Entity
 @ToString(exclude = "user")
-@Table(name = "user_wallet")
+@Table(name = "user_wallet",
+        indexes = {
+                @Index(name = "idx_user_id", columnList = "user_id")
+        })
 public class UserWallet {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -18,6 +21,6 @@ public class UserWallet {
     @JoinColumn(name = "user_id")
     private User user;
     private String symbol;
-    @Column(name="ACCOUNTBALANCE")
+    @Column(name = "ACCOUNTBALANCE")
     private float accountBalance;
 }

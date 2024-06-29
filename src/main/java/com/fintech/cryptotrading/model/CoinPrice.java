@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "coin_price")
+@Table(name = "coin_price", indexes = @Index(name="idx_symbol", columnList = "name"))
 public class CoinPrice {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

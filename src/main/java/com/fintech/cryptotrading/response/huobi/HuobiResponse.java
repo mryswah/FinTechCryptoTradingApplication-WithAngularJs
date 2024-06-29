@@ -1,4 +1,4 @@
-package com.fintech.cryptotrading.model.huobi;
+package com.fintech.cryptotrading.response.huobi;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -1,4 +1,4 @@
-package com.fintech.cryptotrading.model.binance;
+package com.fintech.cryptotrading.response.binance;
 
 import lombok.*;
 

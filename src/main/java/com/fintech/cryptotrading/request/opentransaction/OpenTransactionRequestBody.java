@@ -1,5 +1,6 @@
-package com.fintech.cryptotrading.model.requests;
+package com.fintech.cryptotrading.request.opentransaction;
 
+import com.fintech.cryptotrading.constant.CommonConstant;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
@@ -11,11 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TransactionRequest {
-    @NotBlank(message = "Username cannot be blank")
-    private String username;
-    @NotBlank(message = "Coin Name cannot be blank")
-    private String coinName;
+public class OpenTransactionRequestBody {
     @NotBlank(message = "Order Type cannot be blank")
     private String orderType;
     @Positive(message = "Number of Units cannot be blank or zero")
