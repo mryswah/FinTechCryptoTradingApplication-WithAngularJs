@@ -10,10 +10,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -27,17 +24,17 @@ public class UserController {
         this.userService = userService;
     }
 
-    @GetMapping("/walletBalance")
+    @PostMapping("/walletBalance")
     public ResponseEntity<UserWalletDto> getWalletBalance(@Valid @RequestBody UserRequest userRequest) throws UserException {
         return new ResponseEntity<>(userService.getWalletBalance(userRequest), HttpStatus.OK);
     }
 
-    @GetMapping("/cryptoWalletBalance")
+    @PostMapping("/cryptoWalletBalance")
     public ResponseEntity<List<UserCryptoWalletDto>> getCryptoWalletBalance(@Valid @RequestBody UserRequest userRequest) throws UserException {
         return new ResponseEntity<>(userService.getCryptoWalletBalance(userRequest), HttpStatus.OK);
     }
 
-    @GetMapping("/transactions")
+    @PostMapping("/transactions")
     public ResponseEntity<List<TransactionsDto>> getTransactions(@Valid @RequestBody UserRequest userRequest) throws UserException {
         return new ResponseEntity<>(userService.getTransactions(userRequest), HttpStatus.OK);
     }

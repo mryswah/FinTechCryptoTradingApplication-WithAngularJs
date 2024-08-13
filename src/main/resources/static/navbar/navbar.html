@@ -1,0 +1,13 @@
+<nav class="navbar navbar-default" ng-controller="navBarController">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="#">Crypto Trading App</a>
+        </div>
+        <ul class="nav navbar-nav">
+            <li><a ng-href="#!/coinPrice" ng-click="reloadRoute('/coinPrice')">Coin Price</a></li>
+            <li><a ng-href="#!/trade" ng-click="reloadRoute('/trade')">Trade</a></li>
+            <li><a ng-href="#!/user" ng-click="reloadRoute('/user')">User</a></li>>
+            <li><a ng-click="logout()">Logout</a></li>
+        </ul>
+    </div>
+</nav>

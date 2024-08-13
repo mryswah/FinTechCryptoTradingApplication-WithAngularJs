@@ -1,0 +1,9 @@
+<div ng-include="'navbar/navbar.html'"></div>
+<div ng-controller="userController">
+    <div ng-if="userData">
+        <p>Wallet Balance: {{ userData.walletBalance }}</p>
+        <p>Account Balance : {{userData.walletBalance.accountBalance}} {{userData.walletBalance.symbol}}</p>
+        <p>Crypto Wallet Balance: {{ userData.cryptoWalletBalance }}</p>
+        <p>Transactions: {{ userData.transactions }}</p>
+    </div>
+</div>

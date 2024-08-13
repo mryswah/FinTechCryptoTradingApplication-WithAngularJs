@@ -1,0 +1,90 @@
+<div ng-include="'navbar/navbar.html'"></div>
+<div>
+    <!--    Left side-->
+    <div class="row">
+        <div class="col-sm-6">
+            <div class="card">
+                <div class="card-body">
+                    <table class="table table-hover table-dark coin-table">
+                        <thead>
+                        <tr>
+                            <th scope="col">Symbol</th>
+                            <th scope="col">Last Updated</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr ng-repeat="coin in coinPrice.data">
+                            <td ng-click="displayTradingCard(coin)">{{coin.symbol}}</td>
+                            <td>{{coin.updatedOn | date:'medium'}}</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!--    Right side-->
+        <!--        <div class="col-sm-6" ng-show="showTradingCard">-->
+        <!--            <div class="card">-->
+        <!--                <div class="card-body">-->
+        <!--                    <table>-->
+        <!--                        <thead>-->
+        <!--                        <tr>-->
+        <!--                            <th scope="col">Symbol : </th>-->
+        <!--                            <th scope="col">{{coin.symbol}}</th>-->
+        <!--                        </tr>-->
+        <!--                        </thead>-->
+        <!--                        <tbody>-->
+        <!--                        <tr>-->
+        <!--                    <a href="#" class="btn btn-primary">Buy</a>-->
+        <!--                    <a href="#" class="btn btn-primary">Sell</a>-->
+        <!--                        </tr>-->
+        <!--                        <tr class="card-title">Number of Units : </tr>-->
+        <!--                        <tr>-->
+        <!--                        <button class="quantity-left-minus" ng-click="decrement()">-</button>-->
+        <!--                        <input type="number" id="units" ng-model="units" />-->
+        <!--                        <button class="quantity-right-plus" ng-click="increment()">+</button>-->
+        <!--                        </tr>-->
+        <!--                        <tr>-->
+        <!--                    <p class="card-text">Total amount payable : </p>-->
+        <!--                        </tr>-->
+        <!--                        </tbody>-->
+        <!--                    </table>-->
+        <!--                </div>-->
+        <!--            </div>-->
+        <!--        </div>-->
+        <div class="col-sm-6" ng-show="showTradingCard">
+            <div ng-controller="transactionController">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Symbol :</label>
+                            <span>{{coin.symbol}}</span>
+                        </div>
+                        <div class="form-group">
+                            <a ng-click="buy(coin.bidPrice, units)" class="btn btn-primary">Buy <br>
+                                {{coin.bidPrice}}</a> <!-- Bid Price -->
+                            <a ng-click="sell(coin.askPrice, units)" class="btn btn-primary">Sell <br> {{coin.askPrice}}</a>
+                            <!-- Sell Price -->
+                        </div>
+                        <div class="form-group">
+                            <label>Number of Units :</label>
+                            <button class="quantity-left-minus" ng-click="decrement()">-</button>
+                            <input type="number" id="units" ng-model="units"/>
+                            <button class="quantity-right-plus" ng-click="increment()">+</button>
+                        </div>
+                        <div class="form-group">
+                            <label>Total amount payable :</label>
+                            <span>{{totalAmount}}</span>
+                        </div>
+                        <a ng-click="totalAmount !== 0 && proceed(coin.symbol, orderType, units)" ng-disabled="totalAmount === 0"
+                           class="btn btn-primary">Proceed</a>
+                        <div ng-if="error" class="error-message">
+                            {{ error }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

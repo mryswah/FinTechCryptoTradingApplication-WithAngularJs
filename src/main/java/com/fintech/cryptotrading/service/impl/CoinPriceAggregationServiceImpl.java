@@ -160,10 +160,10 @@ public class CoinPriceAggregationServiceImpl {
                     bid = hp.getBid();
                     ask = hp.getAsk();
                 }
-                CoinPrice coinPrice = coinPriceRepository.findByName(symbol);
+                CoinPrice coinPrice = coinPriceRepository.findByName(symbol.toUpperCase());
                 if (coinPrice == null) {
                     coinPrice = new CoinPrice();
-                    coinPrice.setSymbol(symbol);
+                    coinPrice.setSymbol(symbol.toUpperCase());
                 }
                 coinPrice.setBidPrice(bid);
                 coinPrice.setAskPrice(ask);

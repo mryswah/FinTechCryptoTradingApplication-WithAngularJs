@@ -1,5 +1,6 @@
 package com.fintech.cryptotrading.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -19,6 +20,7 @@ public class UserCryptoWallet {
     private Long id;
     @ManyToOne
     @JoinColumn(name = "user_id")
+    @JsonBackReference
     private User user;
     private String symbol;
     private float balance;
